@@ -43,4 +43,4 @@ Tested on Unity 2019.3.14f1.
 My Fork Edits:
 
 Can get unmerged pull requests like discussed here by timbo
-
+https://stackoverflow.com/questions/27567846/how-can-i-check-out-a-github-pull-request-with-git
