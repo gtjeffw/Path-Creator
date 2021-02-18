@@ -23,7 +23,7 @@ namespace PathCreation.Examples {
         MeshRenderer meshRenderer;
         Mesh mesh;
 
-        Transform meshHolder;
+        //Transform meshHolder;
 
         protected override void PathUpdated()
         {
@@ -123,16 +123,22 @@ namespace PathCreation.Examples {
             mesh.SetTriangles (underRoadTriangles, 1);
             mesh.SetTriangles (sideOfRoadTriangles, 2);
             mesh.RecalculateBounds ();
+
+            return mesh;
         }
 
         // Add MeshRenderer and MeshFilter components to this gameobject if not already attached
         void AssignMeshComponents()
         {
             // Find/creator mesh holder object in children
-            string meshHolderName = "Mesh Holder";
-            meshHolder = transform.Find(meshHolderName);
+            string meshHolderName = "Road Mesh Holder";
+            var trans = transform.Find(meshHolderName);
+            if(trans != null)
+            {
+                meshHolder = trans.gameObject;
+            }
             if (meshHolder == null) {
-                meshHolder = new GameObject ("Road Mesh Holder");
+                meshHolder = new GameObject (meshHolderName);
             }
 
             meshHolder.transform.rotation = Quaternion.identity;
@@ -182,6 +188,8 @@ namespace PathCreation.Examples {
                 else if (meshColliderEnable)
                 {
                     meshHolder.gameObject.AddComponent<MeshCollider>();
+
+                    // TODO why can't mesh be set here?
                 }
             }
         }
