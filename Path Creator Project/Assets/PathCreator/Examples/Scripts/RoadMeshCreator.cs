@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using PathCreation.Utility;
 using UnityEngine;
 
@@ -9,6 +9,7 @@ namespace PathCreation.Examples {
         [Range (0, .5f)]
         public float thickness = .15f;
         public bool flattenSurface;
+        public bool meshCollider;
 
         [Header ("Material settings")]
         public Material roadMaterial;
@@ -22,15 +23,22 @@ namespace PathCreation.Examples {
         MeshRenderer meshRenderer;
         Mesh mesh;
 
-        protected override void PathUpdated () {
-            if (pathCreator != null) {
-                AssignMeshComponents ();
-                AssignMaterials ();
-                CreateRoadMesh ();
+        Transform meshHolder;
+
+        protected override void PathUpdated()
+        {
+            if (pathCreator != null)
+            {
+                AssignMeshComponents();
+                AssignMaterials();
+                meshFilter.mesh = CreateRoadMesh();
+                UpdateMeshCollider(meshCollider);
             }
         }
+        
 
-        void CreateRoadMesh () {
+        Mesh CreateRoadMesh()
+        {
             Vector3[] verts = new Vector3[path.NumPoints * 8];
             Vector2[] uvs = new Vector2[verts.Length];
             Vector3[] normals = new Vector3[verts.Length];
@@ -118,8 +126,11 @@ namespace PathCreation.Examples {
         }
 
         // Add MeshRenderer and MeshFilter components to this gameobject if not already attached
-        void AssignMeshComponents () {
-
+        void AssignMeshComponents()
+        {
+            // Find/creator mesh holder object in children
+            string meshHolderName = "Mesh Holder";
+            meshHolder = transform.Find(meshHolderName);
             if (meshHolder == null) {
                 meshHolder = new GameObject ("Road Mesh Holder");
             }
@@ -150,6 +161,31 @@ namespace PathCreation.Examples {
                 meshRenderer.sharedMaterials[0].mainTextureScale = new Vector3 (1, textureTiling);
             }
         }
+
+        //update meshcolider if enabled
+        void UpdateMeshCollider(bool meshColliderEnable)
+        {
+            if (meshHolder != null)
+            {
+                MeshCollider meshCol = meshHolder.GetComponent<MeshCollider>();
+                if (meshCol != null)
+                {
+                    if (meshColliderEnable)
+                    {
+                        meshCol.sharedMesh = meshHolder.GetComponent<MeshFilter>().sharedMesh;
+                    }
+                    else
+                    {
+                        DestroyImmediate(meshCol);
+                    }                
+                }
+                else if (meshColliderEnable)
+                {
+                    meshHolder.gameObject.AddComponent<MeshCollider>();
+                }
+            }
+        }
+
 
     }
 }
