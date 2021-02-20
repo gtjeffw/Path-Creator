@@ -14,6 +14,8 @@ namespace PathCreation.Examples
         public float distanceTravelled;
         public int currentBezierSegment;
 
+        public Vector3 eulerOffsetRot = Vector3.zero;
+
         void Start() {
             if (pathCreator != null)
             {
@@ -28,7 +30,12 @@ namespace PathCreation.Examples
             {
                 distanceTravelled += speed * Time.deltaTime;
                 transform.position = pathCreator.path.GetPointAtDistance(distanceTravelled, endOfPathInstruction);
-                transform.rotation = pathCreator.path.GetRotationAtDistance(distanceTravelled, endOfPathInstruction);
+
+                //TODO could make this 2d/3d
+
+                transform.forward = pathCreator.path.GetDirectionAtDistance(distanceTravelled, endOfPathInstruction);
+                //transform.rotation = Quaternion.Euler(eulerOffsetRot) * pathCreator.path.GetRotationAtDistance(distanceTravelled, endOfPathInstruction);
+
                 currentBezierSegment = pathCreator.path.GetBezierSegmentIndexAtDistance(distanceTravelled, endOfPathInstruction);
 
 

@@ -10,6 +10,10 @@ namespace PathCreation.Examples {
         public PathFollowerAdvanced pathFollower;
         PathCreator pathCreator;
 
+        public bool Mode2D = true;
+
+        public float RandAbsAngle = 30f;
+
         private void Awake()
         {
 
@@ -27,9 +31,13 @@ namespace PathCreation.Examples {
 
         void Start () {
 
-            Vector3[] pts = { Vector3.zero, Random.onUnitSphere * Random.Range(5f,15f) };
+            Vector3 v2 = Mode2D ?
+                Quaternion.AngleAxis(Random.Range(-180f, 180f), Vector3.up) * Vector3.right :
+                Random.onUnitSphere * Random.Range(5f, 15f);
 
-            BezierPath bezierPath = new BezierPath(pts, closedLoop, PathSpace.xyz);
+            Vector3[] pts = { Vector3.zero, v2 };
+
+            BezierPath bezierPath = new BezierPath(pts, closedLoop, Mode2D ? PathSpace.xz : PathSpace.xyz);
             pathCreator.bezierPath = bezierPath;
             bezierPath.ControlPointMode = BezierPath.ControlMode.Aligned;
 
@@ -77,17 +85,28 @@ namespace PathCreation.Examples {
             var contDir = (lastAnchor - lastControl).normalized;
 
             // any perpendicular v will do
-            Vector3 perpDir = AnyPerpUnitV(contDir);
+            Vector3 perpDir = Mode2D ? Vector3.up : AnyPerpUnitV(contDir);
 
-            var angleRange = 30f;
+            var angleRange = RandAbsAngle;
 
-            var angRot = Quaternion.AngleAxis(Random.Range(0f, angleRange), perpDir);
+            var angRot = Quaternion.AngleAxis(Random.Range(-angleRange, angleRange), perpDir);
 
             var newAnchorDir = angRot * (contDir * Random.Range(2f, 15f));
 
-            angRot = Quaternion.AngleAxis(Random.Range(-180f, 180f), contDir);
+            Vector3 newAnchor = Vector3.zero;
 
-            var newAnchor = lastAnchor + angRot * newAnchorDir;
+            if (Mode2D)
+            {
+                newAnchor = lastAnchor + newAnchorDir;
+
+                newAnchor.y = 0f;
+            }
+            else
+            {
+                angRot = Quaternion.AngleAxis(Random.Range(-180f, 180f), contDir);
+
+                newAnchor = lastAnchor + angRot * newAnchorDir;
+            }
 
             bp.AddSegmentToEnd(newAnchor);
 
