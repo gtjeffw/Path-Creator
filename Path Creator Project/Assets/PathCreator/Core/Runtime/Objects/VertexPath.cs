@@ -17,6 +17,7 @@ namespace PathCreation {
 
         public readonly PathSpace space;
         public readonly bool isClosedLoop;
+        public readonly int[] localOwnerSegmentIndex;
         public readonly Vector3[] localPoints;
         public readonly Vector3[] localTangents;
         public readonly Vector3[] localNormals;
@@ -63,6 +64,7 @@ namespace PathCreation {
             int numVerts = pathSplitData.vertices.Count;
             length = pathSplitData.cumulativeLength[numVerts - 1];
 
+            localOwnerSegmentIndex = new int[numVerts];
             localPoints = new Vector3[numVerts];
             localNormals = new Vector3[numVerts];
             localTangents = new Vector3[numVerts];
@@ -76,6 +78,7 @@ namespace PathCreation {
 
             // Loop through the data and assign to arrays.
             for (int i = 0; i < localPoints.Length; i++) {
+                localOwnerSegmentIndex[i] = pathSplitData.segmentOwner[i];
                 localPoints[i] = pathSplitData.vertices[i];
                 localTangents[i] = pathSplitData.tangents[i];
                 cumulativeLengthAtEachVertex[i] = pathSplitData.cumulativeLength[i];
@@ -174,6 +177,19 @@ namespace PathCreation {
             return MathUtility.TransformPoint (localPoints[index], transform, space);
         }
 
+        public int GetBezierSegmentIndex(int index)
+        {
+            return localOwnerSegmentIndex[index];
+        }
+
+
+        /// Gets Bezier segment index based on distance travelled.
+        public int GetBezierSegmentIndexAtDistance(float dst, EndOfPathInstruction endOfPathInstruction = EndOfPathInstruction.Loop)
+        {
+            float t = dst / length;
+            return GetBezierSegmentIndexAtTime(t, endOfPathInstruction);
+        }
+
         /// Gets point on path based on distance travelled.
         public Vector3 GetPointAtDistance (float dst, EndOfPathInstruction endOfPathInstruction = EndOfPathInstruction.Loop) {
             float t = dst / length;
@@ -196,6 +212,14 @@ namespace PathCreation {
         public Quaternion GetRotationAtDistance (float dst, EndOfPathInstruction endOfPathInstruction = EndOfPathInstruction.Loop) {
             float t = dst / length;
             return GetRotation (t, endOfPathInstruction);
+        }
+
+
+        /// Gets Bezier Segment Index on path based on 'time' (where 0 is start, and 1 is end of path).
+        public int GetBezierSegmentIndexAtTime(float t, EndOfPathInstruction endOfPathInstruction = EndOfPathInstruction.Loop)
+        {
+            var data = CalculatePercentOnPathData(t, endOfPathInstruction);
+            return GetBezierSegmentIndex(data.previousIndex);
         }
 
         /// Gets point on path based on 'time' (where 0 is start, and 1 is end of path).
@@ -225,6 +249,25 @@ namespace PathCreation {
             Vector3 normal = Vector3.Lerp (localNormals[data.previousIndex], localNormals[data.nextIndex], data.percentBetweenIndices);
             return Quaternion.LookRotation (MathUtility.TransformDirection (direction, transform, space), MathUtility.TransformDirection (normal, transform, space));
         }
+
+
+        /// Finds the closest segment index on the path from any point in the world
+        public int GetClosestBezierSegmentIndexOnPath(Vector3 worldPoint)
+        {
+            // Transform the provided worldPoint into VertexPath local-space.
+            // This allows to do math on the localPoint's, thus avoiding the need to
+            // transform each local vertexpath point into world space via GetPoint.
+            Vector3 localPoint = MathUtility.InverseTransformPoint(worldPoint, transform, space);
+
+            TimeOnPathData data = CalculateClosestPointOnPathData(localPoint);
+
+            int res = GetBezierSegmentIndex(data.previousIndex);
+
+            return res;
+
+        }
+
+
 
         /// Finds the closest point on the path from any point in the world
         public Vector3 GetClosestPointOnPath (Vector3 worldPoint) {
