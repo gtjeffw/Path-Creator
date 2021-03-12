@@ -1,8 +1,8 @@
 {
-  "name": "com.seblague.pathcreator",
+  "name": "com.gtjeffw.pathcreator",
   "version": "1.0.0",
-  "displayName": "Path Creator",
-  "unity": "2018.1",
+  "displayName": "SebLague's Path Creator",
+  "unity": "2019.4",
   "dependencies": {
   }
 }
