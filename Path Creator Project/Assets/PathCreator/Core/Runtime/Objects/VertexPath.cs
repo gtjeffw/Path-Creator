@@ -17,7 +17,7 @@ namespace PathCreation {
 
         public readonly PathSpace space;
         public readonly bool isClosedLoop;
-        public readonly int[] localOwnerSegmentIndex;
+        public readonly int[] localAnchorVertexIndex;
         public readonly Vector3[] localPoints;
         public readonly Vector3[] localTangents;
         public readonly Vector3[] localNormals;
@@ -64,7 +64,7 @@ namespace PathCreation {
             int numVerts = pathSplitData.vertices.Count;
             length = pathSplitData.cumulativeLength[numVerts - 1];
 
-            localOwnerSegmentIndex = new int[numVerts];
+            localAnchorVertexIndex = pathSplitData.anchorVertexMap.ToArray(); 
             localPoints = new Vector3[numVerts];
             localNormals = new Vector3[numVerts];
             localTangents = new Vector3[numVerts];
@@ -78,7 +78,6 @@ namespace PathCreation {
 
             // Loop through the data and assign to arrays.
             for (int i = 0; i < localPoints.Length; i++) {
-                localOwnerSegmentIndex[i] = pathSplitData.segmentOwner[i];
                 localPoints[i] = pathSplitData.vertices[i];
                 localTangents[i] = pathSplitData.tangents[i];
                 cumulativeLengthAtEachVertex[i] = pathSplitData.cumulativeLength[i];
@@ -179,7 +178,22 @@ namespace PathCreation {
 
         public int GetBezierSegmentIndex(int index)
         {
-            return localOwnerSegmentIndex[index];
+            //return localOwnerSegmentIndex[index];
+
+            // assume that localAnchorVertexIndex is in sorted order (should be)
+            var f = System.Array.BinarySearch<int>(localAnchorVertexIndex, index);
+
+            if(f < 0)
+            {
+                var ff = ~f; //complement b/c that is the way BinarySearch works!
+
+                if (ff >= localAnchorVertexIndex.Length)
+                    return -1; //beyond the last segment
+
+                return ff - 1;
+            }
+
+            return f;
         }
 
 

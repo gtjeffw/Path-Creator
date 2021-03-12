@@ -10,7 +10,6 @@ namespace PathCreation.Utility
         {
 			PathSplitData splitData = new PathSplitData();
 
-            splitData.segmentOwner.Add(0);
             splitData.vertices.Add(bezierPath[0]);
             splitData.tangents.Add(CubicBezierUtility.EvaluateCurveDerivative(bezierPath.GetPointsInSegment(0), 0).normalized);
             splitData.cumulativeLength.Add(0);
@@ -53,7 +52,6 @@ namespace PathCreation.Utility
 
                         currentPathLength += (lastAddedPoint - pointOnPath).magnitude;
                         splitData.cumulativeLength.Add(currentPathLength);
-                        splitData.segmentOwner.Add(segmentIndex);
                         splitData.vertices.Add(pointOnPath);
                         splitData.tangents.Add(CubicBezierUtility.EvaluateCurveDerivative(segmentPoints, t).normalized);
 						splitData.minMax.AddValue(pointOnPath);
@@ -75,7 +73,6 @@ namespace PathCreation.Utility
         {
 			PathSplitData splitData = new PathSplitData();
 
-            splitData.segmentOwner.Add(0);
             splitData.vertices.Add(bezierPath[0]);
             splitData.tangents.Add(CubicBezierUtility.EvaluateCurveDerivative(bezierPath.GetPointsInSegment(0), 0).normalized);
             splitData.cumulativeLength.Add(0);
@@ -117,7 +114,6 @@ namespace PathCreation.Utility
                     {
                         currentPathLength += (lastAddedPoint - pointOnPath).magnitude;
                         splitData.cumulativeLength.Add(currentPathLength);
-                        splitData.segmentOwner.Add(segmentIndex);
                         splitData.vertices.Add(pointOnPath);
                         splitData.tangents.Add(CubicBezierUtility.EvaluateCurveDerivative(segmentPoints, t).normalized);
 						splitData.minMax.AddValue(pointOnPath);
@@ -133,7 +129,6 @@ namespace PathCreation.Utility
 
        
 	   public class PathSplitData {
-           public List<int> segmentOwner = new List<int>();
 		   public List<Vector3> vertices = new List<Vector3>();
 		   public List<Vector3> tangents = new List<Vector3>();
 		   public List<float> cumulativeLength = new List<float>();

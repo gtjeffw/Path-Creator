@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using PathCreation.Utility;
 using UnityEngine;
 
@@ -15,6 +16,15 @@ namespace PathCreation.Examples {
         public Material roadMaterial;
         public Material undersideMaterial;
         public float textureTiling = 1;
+        public float texturePerMeters = 20f;
+
+        public float textureOffset = 0;
+        public float prevTextureOffset = 0;
+        //public float prevTextureOffset2 = 0;
+        public float DB_UpdatedOffset = 0;
+        public float DB_texOffsetErr = 0;
+
+        public float[] DB_segLens;
 
         [SerializeField, HideInInspector]
         GameObject meshHolder;
@@ -25,8 +35,17 @@ namespace PathCreation.Examples {
 
         //Transform meshHolder;
 
+
+        // which bezier control point is used to determine texture tile offset
+        int BezierSegmentReferenceControlPoint = 3;
+
+
         protected override void PathUpdated()
         {
+
+
+            //Debug.Log("roadmeshpath is being updated!");
+
             if (pathCreator != null)
             {
                 AssignMeshComponents();
@@ -39,6 +58,8 @@ namespace PathCreation.Examples {
 
         Mesh CreateRoadMesh()
         {
+            //var epsilon = 0.0001f;
+
             Vector3[] verts = new Vector3[path.NumPoints * 8];
             Vector2[] uvs = new Vector2[verts.Length];
             Vector3[] normals = new Vector3[verts.Length];
@@ -47,6 +68,46 @@ namespace PathCreation.Examples {
             int[] roadTriangles = new int[numTris * 3];
             int[] underRoadTriangles = new int[numTris * 3];
             int[] sideOfRoadTriangles = new int[numTris * 2 * 3];
+
+
+            //var items = path.cumulativeLengthAtEachVertex.Where((item, index) => path.localAnchorVertexIndex.Contains(index));
+
+            //items = items.Zip(items.Skip(1), (x, y) => y - x);
+
+            //var arrItems = items.ToArray();
+
+
+            //for(int i = 1; i < DB_segLens.Length - 1; ++i)
+            //{
+            //    int j = i - 1;
+
+            //    if (j == 0)
+            //        continue;
+
+            //    if (j > arrItems.Length)
+            //    {
+            //        Debug.LogWarning("DB_SegLens doesn't match current seglens");
+            //        continue;
+            //    }
+
+            //    if(  Mathf.Abs(DB_segLens[i] - arrItems[j]) > epsilon )
+            //    {
+            //        Debug.LogError($"SegLens at {i} don't match: DB_seglens {DB_segLens[i]} and {arrItems[j]}");
+            //    }
+            //    else
+            //    {
+            //        Debug.Log($"APPROX EQLS !!! SegLens at {i} match: DB_seglens {DB_segLens[i]} and {arrItems[j]}");
+            //    }
+
+            //}
+
+            //DB_segLens = arrItems;
+
+            //var numTextureRepeats = path.length / texturePerMeters;
+
+            //Debug.Log($"pathLen: {path.length} numTextureRepeats: {numTextureRepeats} textOffs: {textureOffset} last ptime: {path.times[path.times.Length-1]}");
+
+            //textureTiling = numTextureRepeats;
 
             int vertIndex = 0;
             int triIndex = 0;
@@ -59,6 +120,50 @@ namespace PathCreation.Examples {
             int[] sidesTriangleMap = { 4, 6, 14, 12, 4, 14, 5, 15, 7, 13, 15, 5 };
 
             bool usePathNormals = !(path.space == PathSpace.xyz && flattenSurface);
+
+            // this should be the beginning of the 2nd bezier segment in path form
+            //path.localAnchorVertexIndex[1]
+            //int prevSeg = 1;
+            //bool secondSegFound = false;
+            //float newTexOffset = 0f;
+
+            var prevSegUpdatedOffset = 0f;
+
+            // BezierSegmentOffset is one less due to the first segment being deleted as it falls off behind the agent
+            if (path.localAnchorVertexIndex.Length > (BezierSegmentReferenceControlPoint-1))
+            {
+                prevSegUpdatedOffset = (  path.cumulativeLengthAtEachVertex[path.localAnchorVertexIndex[BezierSegmentReferenceControlPoint - 1]] * texturePerMeters) % 1f;
+            }
+
+            DB_UpdatedOffset = prevSegUpdatedOffset;
+
+            // Ok, now compare to the old offet and adjust accordingly
+
+
+            textureOffset = prevTextureOffset - prevSegUpdatedOffset;
+
+
+            //while (textureOffset < 0f)
+            //    textureOffset += 1f;
+
+            DB_texOffsetErr = textureOffset;
+
+            //textureOffset = (textureOffset) % 1f;
+
+            //if (path.localAnchorVertexIndex.Length > (BezierSegmentReferenceControlPoint - 1))
+            //{
+            //    var testOffset = (textureOffset + path.cumulativeLengthAtEachVertex[path.localAnchorVertexIndex[BezierSegmentReferenceControlPoint - 1]] * texturePerMeters) % 1f;
+
+            //    if (Mathf.Abs(testOffset - ((prevTextureOffset ))) > epsilon)
+            //    {
+            //        Debug.LogError($"testOffset doesn't match prevTextureOffset {testOffset} and {prevTextureOffset}");
+            //    }
+            //    else
+            //    {
+            //        Debug.Log("GOOD");
+            //    }    
+            //}
+
 
             for (int i = 0; i < path.NumPoints; i++) {
                 Vector3 localUp = (usePathNormals) ? Vector3.Cross (path.GetTangent (i), path.GetNormal (i)) : path.up;
@@ -82,8 +187,22 @@ namespace PathCreation.Examples {
                 verts[vertIndex + 7] = verts[vertIndex + 3];
 
                 // Set uv on y axis to path time (0 at start of path, up to 1 at end of path)
-                uvs[vertIndex + 0] = new Vector2 (0, path.times[i]);
-                uvs[vertIndex + 1] = new Vector2 (1, path.times[i]);
+                // ... Nope, it needs to be based on distance for a dynamically generated path
+                // because the length varies over time as different bezier segments get added/deleted
+                // var texv = textureOffset + path.times[i];
+
+                var texv = textureOffset + path.cumulativeLengthAtEachVertex[i] * texturePerMeters;
+
+                var curSeg = path.GetBezierSegmentIndex(i);
+
+                //if(!secondSegFound && curSeg <= prevSeg)
+                //{
+                //    secondSegFound = true;
+                //    newTexOffset = texv;
+                //}
+
+                uvs[vertIndex + 0] = new Vector2 (0, texv);
+                uvs[vertIndex + 1] = new Vector2 (1, texv);
 
                 // Top of road normals
                 normals[vertIndex + 0] = localUp;
@@ -112,7 +231,21 @@ namespace PathCreation.Examples {
 
                 vertIndex += 8;
                 triIndex += 6;
+
+            } //for
+
+
+            // Need to remember the texture coord offset so that we can adjust the offset as the path changes...
+
+            if (path.localAnchorVertexIndex.Length > BezierSegmentReferenceControlPoint)
+            {
+                prevTextureOffset = (textureOffset + path.cumulativeLengthAtEachVertex[path.localAnchorVertexIndex[BezierSegmentReferenceControlPoint]] * texturePerMeters) % 1f;
             }
+
+            //if (path.localAnchorVertexIndex.Length > BezierSegmentReferenceControlPoint + 1)
+            //{
+            //    prevTextureOffset2 = (textureOffset + path.cumulativeLengthAtEachVertex[path.localAnchorVertexIndex[BezierSegmentReferenceControlPoint + 1]] * texturePerMeters) % 1f;
+            //}
 
             mesh.Clear ();
             mesh.vertices = verts;

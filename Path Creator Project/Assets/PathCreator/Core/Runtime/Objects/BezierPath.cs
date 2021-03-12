@@ -224,8 +224,29 @@ namespace PathCreation {
             }
         }
 
+
+        public void DeleteSegmentFromBeginningAndAddToEnd(Vector3 anchorPos)
+        {
+            DeleteSegmentNoNotify(0);
+
+            AddSegmentToEndNoNotify(anchorPos);
+
+            NotifyPathModified();
+
+        }
+
+        public void AddSegmentToEnd(Vector3 anchorPos)
+        {
+            AddSegmentToEndNoNotify(anchorPos);
+
+            NotifyPathModified();
+        }
+
+
+
+
         /// Add new anchor point to end of the path
-        public void AddSegmentToEnd (Vector3 anchorPos) {
+        protected void AddSegmentToEndNoNotify (Vector3 anchorPos) {
             if (isClosed) {
                 return;
             }
@@ -248,9 +269,7 @@ namespace PathCreation {
 
             if (controlMode == ControlMode.Automatic) {
                 AutoSetAllAffectedControlPoints (points.Count - 1);
-            }
-
-            NotifyPathModified ();
+            }            
         }
 
         /// Add new anchor point to start of the path
@@ -314,8 +333,18 @@ namespace PathCreation {
             NotifyPathModified ();
         }
 
+
         /// Delete the anchor point at given index, as well as its associated control points
-        public void DeleteSegment (int anchorIndex) {
+        public void DeleteSegment(int anchorIndex)
+        {
+            DeleteSegmentNoNotify(anchorIndex);
+
+            NotifyPathModified();
+        }
+
+
+        /// Delete the anchor point at given index, as well as its associated control points
+        protected void DeleteSegmentNoNotify (int anchorIndex) {
             // Don't delete segment if its the last one remaining (or if only two segments in a closed path)
             if (NumSegments > 2 || !isClosed && NumSegments > 1) {
                 if (anchorIndex == 0) {
@@ -334,8 +363,7 @@ namespace PathCreation {
                 if (controlMode == ControlMode.Automatic) {
                     AutoSetAllControlPoints ();
                 }
-
-                NotifyPathModified ();
+                
             }
         }
 

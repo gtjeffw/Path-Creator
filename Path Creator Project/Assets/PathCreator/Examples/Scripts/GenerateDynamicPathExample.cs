@@ -14,6 +14,8 @@ namespace PathCreation.Examples {
 
         public float RandAbsAngle = 30f;
 
+        public float DB_followerPos = 0f;
+
         private void Awake()
         {
 
@@ -42,7 +44,7 @@ namespace PathCreation.Examples {
             bezierPath.ControlPointMode = BezierPath.ControlMode.Aligned;
 
             // Need enough points that follower doesn't run off the path
-            for (int i = 0; i < 5; ++i)
+            for (int i = 0; i < 7; ++i)
                 AddRandomSegmentToPath();
 
         }
@@ -71,9 +73,8 @@ namespace PathCreation.Examples {
 
 
 
-        void AddRandomSegmentToPath()
+        Vector3 GenerateRandomAnchor()
         {
-
             var bp = pathCreator.bezierPath;
 
             var lasti = bp.NumSegments - 1;
@@ -108,7 +109,35 @@ namespace PathCreation.Examples {
                 newAnchor = lastAnchor + angRot * newAnchorDir;
             }
 
+            return newAnchor;
+
+        }
+
+
+        void AddRandomSegmentToPath()
+        {
+
+            var bp = pathCreator.bezierPath;
+
+            var newAnchor = GenerateRandomAnchor();
+
+            //bp.AddSegmentToEnd(newAnchor);
+
             bp.AddSegmentToEnd(newAnchor);
+
+        }
+
+
+        void RemoveFirstAndAddRandomSegmentToPath()
+        {
+
+            var bp = pathCreator.bezierPath;
+
+            var newAnchor = GenerateRandomAnchor();
+
+            //bp.AddSegmentToEnd(newAnchor);
+
+            bp.DeleteSegmentFromBeginningAndAddToEnd(newAnchor);
 
         }
 
@@ -120,15 +149,17 @@ namespace PathCreation.Examples {
             //var dist = pathFollower.distanceTravelled;
             var currSeg = pathFollower.currentBezierSegment;
 
+            DB_followerPos = pathFollower.distanceTravelled;
+
             var bp = pathCreator.bezierPath;
 
-            if (currSeg > 2)
+            if (currSeg > 3)
             {
                 // del first seg
-                bp.DeleteSegment(0);
+                //bp.DeleteSegment(0);
 
                 // replace del seg with new random one at the end
-                AddRandomSegmentToPath();
+                RemoveFirstAndAddRandomSegmentToPath();
 
             }
 
